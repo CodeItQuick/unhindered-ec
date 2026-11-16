@@ -3,10 +3,12 @@ use printing::{PrintNewline, PrintPeriod, PrintSpace, PrintString};
 
 use self::instruction_error::PushInstructionError;
 pub use self::{
-    bool::BoolInstruction,
+    bool::{BoolInstruction, BoolOp},
     exec::ExecInstruction,
-    float::FloatInstruction,
-    int::{IntInstruction, IntInstructionError},
+    float::{FloatInstruction, FloatOp},
+    int::{IntInstruction, IntInstructionError, IntOp},
+    string::{StringInstruction, StringOp},
+    typed::TypedInstruction,
 };
 use crate::{
     error::{InstructionResult, MapInstructionError},
@@ -23,6 +25,8 @@ mod bool;
 mod exec;
 mod float;
 mod int;
+mod string;
+mod typed;
 
 /*
  * exec_if requires a boolean and two (additional) values on the exec stack.
@@ -77,6 +81,7 @@ pub enum PushInstruction {
     BoolInstruction(BoolInstruction),
     IntInstruction(IntInstruction),
     FloatInstruction(FloatInstruction),
+    StringInstruction(StringInstruction),
     PrintSpace(PrintSpace),
     PrintNewline(PrintNewline),
     PrintPeriod(PrintPeriod),
@@ -101,7 +106,7 @@ impl PushInstruction {
 
     #[must_use]
     pub fn push_float(f: OrderedFloat<f64>) -> Self {
-        FloatInstruction::push_ordered_float(f).into()
+        FloatInstruction::push(f).into()
     }
 }
 
@@ -115,6 +120,7 @@ where
     BoolInstruction: Perform<S, Error: Into<PushInstructionError>>,
     IntInstruction: Perform<S, Error: Into<PushInstructionError>>,
     FloatInstruction: Perform<S, Error: Into<PushInstructionError>>,
+    StringInstruction: Perform<S, Error: Into<PushInstructionError>>,
     PrintString: Perform<S, Error: Into<PushInstructionError>>,
     PrintChar<' '>: Perform<S, Error: Into<PushInstructionError>>,
     PrintChar<'\n'>: Perform<S, Error: Into<PushInstructionError>>,
@@ -129,6 +135,7 @@ where
             Self::BoolInstruction(i) => i.perform(state).map_err_into(),
             Self::IntInstruction(i) => i.perform(state).map_err_into(),
             Self::FloatInstruction(i) => i.perform(state).map_err_into(),
+            Self::StringInstruction(i) => i.perform(state).map_err_into(),
             Self::PrintString(i) => i.perform(state).map_err_into(),
             Self::PrintSpace(i) => i.perform(state).map_err_into(),
             Self::PrintNewline(i) => i.perform(state).map_err_into(),
@@ -162,6 +169,7 @@ impl std::fmt::Display for PushInstruction {
             Self::BoolInstruction(instruction) => write!(f, "Bool-{instruction}"),
             Self::IntInstruction(instruction) => write!(f, "Int-{instruction}"),
             Self::FloatInstruction(instruction) => write!(f, "Float-{instruction}"),
+            Self::StringInstruction(instruction) => write!(f, "String-{instruction}"),
             Self::PrintString(instruction) => write!(f, "PrintString({})", instruction.0),
             Self::PrintSpace(_) => write!(f, "PrintSpace"),
             Self::PrintNewline(_) => write!(f, "PrintNewline"),

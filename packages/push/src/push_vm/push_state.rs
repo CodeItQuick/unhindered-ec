@@ -34,6 +34,8 @@ pub struct PushState {
     pub(crate) float: Stack<OrderedFloat<f64>>,
     #[stack(sample_values = [true, false, true, true])]
     pub(crate) bool: Stack<bool>,
+    #[stack(sample_values = ["a".to_string(), "bc".to_string()])]
+    pub(crate) string: Stack<String>,
     // The Internet suggests that when you have fewer than 15 entries,
     // linear search on `Vec` is faster than `HashMap`. I found that
     // using `HashMap` here did slow things down, mostly
@@ -158,17 +160,17 @@ mod tests {
             push_bool(true),                 // [true]
             WithInputInstruction::from("a"), // [true, true]
             push_int(9),                     // [9, 8, 5]
-            BoolInstruction::Or,             // [true]
-            IntInstruction::Add,             // [17, 5]
+            BoolInstruction::or(),             // [true]
+            IntInstruction::add(),             // [17, 5]
             push_int(6),                     // [6, 17, 5]
-            IntInstruction::IsEven,          // [17, 5], [true, true]
-            BoolInstruction::And,            // [true]
+            IntInstruction::is_even(),          // [17, 5], [true, true]
+            BoolInstruction::and(),            // [true]
             WithInputInstruction::from("b"), // [false, true]
             push_float(3.5),                 // [3.5]
             FloatInstruction::dup(),         // [3.5, 3.5]
-            FloatInstruction::Multiply,      // [12.25]
+            FloatInstruction::multiply(),      // [12.25]
             WithInputInstruction::from("f"), // [12.25, 0.75]
-            FloatInstruction::Add,           // [13.0]
+            FloatInstruction::add(),           // [13.0]
         ]);
         let state = PushState::builder()
             .with_max_stack_size(16)
@@ -212,17 +214,17 @@ mod tests {
             push_bool(true),                 // [true]
             WithInputInstruction::from("a"), // [true, true]
             push_int(9),                     // [9, 8, 5]
-            BoolInstruction::Or,             // [true]
-            IntInstruction::Add,             // [17, 5]
+            BoolInstruction::or(),             // [true]
+            IntInstruction::add(),             // [17, 5]
             push_int(6),                     // [6, 17, 5]
-            IntInstruction::IsEven,          // [17, 5], [true, true]
-            BoolInstruction::And,            // [true]
+            IntInstruction::is_even(),          // [17, 5], [true, true]
+            BoolInstruction::and(),            // [true]
             WithInputInstruction::from("b"), // [false, true]
             push_float(3.5),                 // [3.5]
             FloatInstruction::dup(),         // [3.5, 3.5]
-            FloatInstruction::Multiply,      // [12.25]
+            FloatInstruction::multiply(),      // [12.25]
             WithInputInstruction::from("f"), // [12.25, 0.75]
-            FloatInstruction::Add,           // [13.0]
+            FloatInstruction::add(),           // [13.0]
         ]);
         let state = PushState::builder()
             .with_max_stack_size(16)
@@ -244,5 +246,18 @@ mod tests {
         // Nothing should happen because we've set the maximum instruction steps
         // to 0, and no instructions should be performed.
         assert_eq!(state, initial_state);
+    }
+
+    #[test]
+    fn builder_sets_string_values() {
+        let state = PushState::builder()
+            .with_max_stack_size(2)
+            .with_string_values(["a".to_string(), "b".to_string()])
+            .unwrap()
+            .with_no_program()
+            .with_instruction_step_limit(1000)
+            .build();
+        assert_eq!(state.string.size(), 2);
+        assert_eq!(state.string.top(), Ok(&"a".to_string()));
     }
 }
